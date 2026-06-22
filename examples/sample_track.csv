@@ -1,0 +1,14 @@
+# Sample AIS track export: timestamp,mmsi,lat,lon
+# Vessel 366123456 behaves normally, then goes dark for ~6h and reappears far
+# away (an implausible implied speed — a classic dark-rendezvous / spoofing tell).
+# Vessel 477888999 drifts slowly and normally throughout (should score low).
+timestamp,mmsi,lat,lon
+2026-06-01T00:00:00Z,366123456,37.8000,-122.4000
+2026-06-01T00:30:00Z,366123456,37.8200,-122.4500
+2026-06-01T01:00:00Z,366123456,37.8400,-122.5000
+2026-06-01T07:10:00Z,366123456,39.9000,-124.8000
+2026-06-01T07:40:00Z,366123456,39.9200,-124.8500
+2026-06-01T00:00:00Z,477888999,33.7000,-118.2000
+2026-06-01T00:45:00Z,477888999,33.7050,-118.2100
+2026-06-01T01:30:00Z,477888999,33.7100,-118.2200
+2026-06-01T02:15:00Z,477888999,33.7150,-118.2300

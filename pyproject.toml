@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aisgapwatch"
+version = "0.1.0"
+description = "Detect and score AIS transponder-gap anomalies in vessel tracks (maritime situational awareness / defensive OSINT)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Cognis Digital" }]
+keywords = ["ais", "maritime", "osint", "anomaly-detection", "dark-activity", "situational-awareness"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Intended Audience :: Information Technology",
+]
+dependencies = []   # stdlib-only by design
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+aisgapwatch = "aisgapwatch.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/cognis-digital/aisgapwatch"
+
+[tool.setuptools.packages.find]
+include = ["aisgapwatch*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
