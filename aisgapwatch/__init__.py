@@ -24,8 +24,13 @@ from .data import load_pings, load_pings_list
 from .geo import haversine_nm
 from .scoring import ScoreConfig, score_gap
 from .detect import GapDetector, detect_gaps
+from .emit import to_ndjson, to_csv, to_geojson, to_stix, FORMATS
+from .analyze import (
+    initial_bearing_deg, compass_point, plausibility_class, PLAUSIBILITY_BANDS,
+    track_stats, TrackStats, gap_context,
+)
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Ping", "Gap",
@@ -34,5 +39,10 @@ __all__ = [
     "haversine_nm",
     "ScoreConfig", "score_gap",
     "GapDetector", "detect_gaps",
+    # emitters
+    "to_ndjson", "to_csv", "to_geojson", "to_stix", "FORMATS",
+    # derived analysis
+    "initial_bearing_deg", "compass_point", "plausibility_class",
+    "PLAUSIBILITY_BANDS", "track_stats", "TrackStats", "gap_context",
     "__version__",
 ]

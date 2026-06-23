@@ -24,7 +24,12 @@ jobs:
           pip install -e ".[dev]"
       - name: Run tests
         run: pytest -q
-      - name: Smoke-test the CLI
+      - name: Smoke-test the CLI (all output formats)
         run: |
           python -m aisgapwatch examples/sample_track.csv --json --top 1 || true
+          python -m aisgapwatch examples/sample_track.csv --format geojson --top 1 || true
+          python -m aisgapwatch examples/sample_track.csv --format stix --top 1 || true
+          python -m aisgapwatch examples/sample_track.csv --format ndjson || true
+          python -m aisgapwatch examples/sample_track.csv --format csv || true
+          python -m aisgapwatch examples/sample_track.csv --context --stats || true
           python -m aisgapwatch --version

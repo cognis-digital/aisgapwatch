@@ -76,6 +76,40 @@ arithmetic per gap (haversine + scoring) is constant-time.
 Errors fail fast and loud at the boundary; the core never guesses past invalid
 input.
 
+## Output emitters (`emit.py`)
+
+`Gap.to_dict()` is the serialization seam; `emit.py` builds on it with pure,
+dependency-free functions that turn a list of gaps into an interchange format:
+
+| Function | Format | Consumer |
+|----------|--------|----------|
+| `to_ndjson` | newline-delimited JSON | log/SIEM pipelines |
+| `to_csv` | RFC-4180 CSV | spreadsheets, pandas |
+| `to_geojson` | `FeatureCollection` (per gap: a reappearance `LineString` + centroid `Point`) | QGIS, kepler.gl |
+| `to_stix` | STIX 2.1 `bundle` of `observed-data` / `x-ais-gap` | MISP, OpenCTI |
+
+STIX object ids are derived deterministically (`sha1(content)` shaped into a
+UUID), so re-emitting the same gap yields the same id and downstream platforms
+de-duplicate instead of accumulating copies. The CLI selects an emitter with
+`--format`; everything detection-side is unchanged.
+
+## Derived analysis (`analyze.py`)
+
+A strictly read-only layer that *describes* gaps and tracks without touching the
+score: `initial_bearing_deg` / `compass_point` give the reappearance direction,
+`plausibility_class` buckets an implied speed into a human label, and
+`track_stats` computes per-vessel feed-quality (span, median/max interval, total
+distance). Because it only reads, the scoring core's provable `[0, 1]` bound is
+untouched.
+
+## Language ports (`ports/`)
+
+The core `haversine → score → detect` pipeline plus the table/JSON CLI is
+mirrored in Node, Go, and a POSIX `sh`+`awk` port. They share the reference's
+thresholds, rounding, and exit codes and are verified against the same sample
+track. The richer emitters and analysis layer remain Python-only. CI builds and
+tests every port (`.github/workflows/ports.yml`).
+
 ## Extension points
 
 - **New signals.** Add a saturated term in `score_gap` and a weight in
@@ -83,5 +117,5 @@ input.
   known dark-activity zone, time-of-day, or loitering before the gap.
 - **New inputs.** Add a parser that yields `Ping` objects (e.g. NMEA-0183, an
   API client) — everything downstream is input-agnostic.
-- **New outputs.** `Gap.to_dict()` is the serialization seam; add a GeoJSON or
-  STIX emitter beside the CLI without touching detection.
+- **New outputs.** Add a function to `emit.py` next to the existing emitters; it
+  only needs to consume `Gap` objects.

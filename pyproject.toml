@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aisgapwatch"
-version = "0.1.0"
+version = "0.2.0"
 description = "Detect and score AIS transponder-gap anomalies in vessel tracks (maritime situational awareness / defensive OSINT)."
 readme = "README.md"
 requires-python = ">=3.9"

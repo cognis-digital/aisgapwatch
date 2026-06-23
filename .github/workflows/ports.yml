@@ -1,0 +1,66 @@
+name: Ports
+
+# Build & test the language ports of the aisgapwatch core CLI surface.
+# Each job is self-contained and offline (no network at runtime); they build
+# and run the port's smoke test against local fixtures only.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "ports/**"
+      - ".github/workflows/ports.yml"
+  pull_request:
+    paths:
+      - "ports/**"
+      - ".github/workflows/ports.yml"
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ports/node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Unit tests (node --test)
+        run: node --test
+      - name: CLI smoke (sample track, JSON)
+        run: |
+          node aisgapwatch.js ../../examples/sample_track.csv --json --top 1 || true
+          node aisgapwatch.js --version
+
+  go:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ports/go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Vet
+        run: go vet ./...
+      - name: Unit tests
+        run: go test -v ./...
+      - name: Build + CLI smoke
+        run: |
+          go build -o aisgapwatch .
+          ./aisgapwatch ../../examples/sample_track.csv --top 1 || true
+          ./aisgapwatch --version
+
+  shell:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ports/shell
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint (shellcheck, non-blocking)
+        run: shellcheck aisgapwatch.sh test.sh || true
+      - name: Smoke test
+        run: bash test.sh

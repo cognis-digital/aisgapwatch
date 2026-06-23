@@ -3,6 +3,33 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this project uses semver.
 
+## [0.2.0] - 2026-06-23
+
+### Added
+- **Output emitters** (`aisgapwatch.emit`): NDJSON, CSV, GeoJSON
+  (`FeatureCollection` of per-gap reappearance `LineString` + centroid `Point`),
+  and STIX 2.1 (`bundle` of `observed-data` wrapping `x-ais-gap` observables with
+  deterministic, content-derived ids). Exposed on the CLI via
+  `--format json|ndjson|csv|geojson|stix`.
+- **Derived analysis** (`aisgapwatch.analyze`): `initial_bearing_deg`,
+  `compass_point`, `plausibility_class`, per-vessel `track_stats` (feed-quality:
+  span, median/max interval, total distance), and `gap_context`. All read-only —
+  they describe a gap, never change its score.
+- CLI: `--context` (bearing + plausibility per row), `--stats` (feed-quality
+  table), and `-` to read a track from stdin. The legacy `--json` flag still
+  works as shorthand for `--format json`.
+- **Language ports** of the core CLI surface under `ports/`: Node (`node --test`),
+  Go (`go test`), and a POSIX `sh`+`awk` port for air-gapped/minimal hosts — each
+  verified to reproduce the reference scores. CI workflow `ports.yml` builds and
+  tests all three on every push.
+- Test suite expanded to 135 Python tests (216 assertions) plus 15 Node and 8
+  shell smoke tests; all offline, stdlib + repo deps only.
+
+### Notes
+- Fully backward compatible: all 0.1.0 behaviour, output, exit codes, and the
+  public API are unchanged; everything above is additive. Still dependency-free,
+  passive, and offline.
+
 ## [0.1.0] - 2026-06-22
 
 ### Added

@@ -1,16 +1,21 @@
 # aisgapwatch
 
 **Detect and score AIS transponder-gap anomalies in vessel tracks** — maritime
-situational awareness and defensive OSINT, in a dependency-free Python package.
+situational awareness and defensive OSINT, in a dependency-free Python package
+with Go / Node / shell ports.
 
 When a vessel's AIS transponder goes quiet and then reappears somewhere it could
 not plausibly have reached, that silence is worth a second look. `aisgapwatch`
 finds those gaps and scores how suspicious each one is, so an analyst can triage
-thousands of tracks down to the handful that matter.
+thousands of tracks down to the handful that matter — then export the survivors
+straight to a map (GeoJSON), a CTI platform (STIX 2.1), or a log pipeline
+(NDJSON/CSV).
 
 > **Scope:** this is a *defensive*, descriptive, open-source-intelligence tool.
-> It analyzes position-report data you already have. It does not track, target,
-> or interfere with anything.
+> It analyzes position-report data you already have. It is **passive and
+> offline** — it never opens a network connection, never tracks, targets, or
+> interferes with anything, and emits no active probes. See
+> [Scope, authorization & safety](#scope-authorization--safety).
 
 ---
 
@@ -64,17 +69,48 @@ score  mmsi       duration  dist_nm  impl_kn  reasons
 0.06   477888999    0.75h      0.6      0.8  -
 ```
 
-- `--json` emits machine-readable output for piping into another tool.
-- `--min-score 0.7` reports only the suspicious gaps.
 - **Exit code** is `2` when any gap is reported and `0` when none are — so it
   drops straight into a shell pipeline or CI alert:
   `aisgapwatch tracks.csv --min-score 0.8 && echo clean || alert`.
+- `--min-score 0.7` reports only the suspicious gaps; `--top N` keeps the worst N.
+- `--context` annotates each row with the reappearance bearing and a coarse
+  plausibility class; `--stats` adds a per-vessel feed-quality table.
+- Pass `-` as the file to read a track from **stdin**.
+
+### Output formats
+
+`--format` renders machine-readable output for whatever you feed next:
+
+| `--format` | Shape | Feeds |
+|------------|-------|-------|
+| `json`     | one object with `file`, `pings`, `gaps[]` (also `--json`) | jq, scripts |
+| `ndjson`   | one JSON gap per line | Splunk, Elastic, log pipelines |
+| `csv`      | flat table, RFC-4180 quoted | spreadsheets, pandas |
+| `geojson`  | `FeatureCollection`: a reappearance `LineString` + centroid `Point` per gap | QGIS, kepler.gl, geojson.io |
+| `stix`     | STIX 2.1 `bundle` of `observed-data` wrapping `x-ais-gap` observables (deterministic ids) | MISP, OpenCTI, other CTI |
+
+```bash
+# Drop the suspicious gaps onto a map
+python -m aisgapwatch tracks.csv --min-score 0.7 --format geojson > gaps.geojson
+
+# Stream into a CTI platform
+python -m aisgapwatch tracks.csv --format stix > gaps.stix.json
+
+# Tail straight into jq
+python -m aisgapwatch tracks.csv --format ndjson | jq 'select(.score > 0.8)'
+```
+
+STIX ids are derived deterministically from gap content (sha1 → UUID shape), so
+re-emitting the same gap is stable and a CTI platform de-duplicates cleanly.
+**No identifier, vessel, or intel is ever fabricated** — every field is computed
+from the position reports you provided.
 
 ## Input format
 
 One comma-separated position report per line: `timestamp,mmsi,lat,lon`. A header
 row is detected and skipped automatically; `#` comments and blank lines are
-ignored. Timestamps are ISO-8601 (a trailing `Z` is fine).
+ignored. Timestamps are ISO-8601 (a trailing `Z` is fine; a bare timestamp is
+treated as UTC).
 
 ## How the score works (in plain terms)
 
@@ -92,6 +128,10 @@ Tune the saturation points and weights with `ScoreConfig` — see
 [`docs/01_ARCHITECTURE.md`](docs/01_ARCHITECTURE.md) for the design and
 [`docs/02_EXPLAINED_SIMPLY.md`](docs/02_EXPLAINED_SIMPLY.md) for a from-scratch tour.
 
+The score is *descriptive*, never a verdict: `--context` adds a coarse
+plausibility band (`normal` / `fast` / `improbable` / `impossible`) and the
+reappearance bearing to help an analyst, without ever changing the score.
+
 ## Public API
 
 ```python
@@ -102,18 +142,62 @@ from aisgapwatch import (
     haversine_nm,                    # great-circle distance (nm)
     score_gap, ScoreConfig,          # scoring
     detect_gaps, GapDetector,        # detection
+    to_ndjson, to_csv, to_geojson, to_stix, FORMATS,   # emitters
+    track_stats, gap_context,        # derived, read-only analysis
+    initial_bearing_deg, compass_point, plausibility_class,
 )
 ```
+
+## Language ports
+
+The core CLI surface is mirrored in three runtimes so you can triage a track on
+whatever a host already has. All are dependency-free and produce the same scores
+and exit codes as the Python reference (see [`ports/`](ports)).
+
+| Port | Runtime | Run | Test |
+|------|---------|-----|------|
+| [`ports/node`](ports/node)   | Node ≥ 18 | `node aisgapwatch.js FILE --json` | `node --test` |
+| [`ports/go`](ports/go)       | Go ≥ 1.21 | `go run . FILE --json` | `go test ./...` |
+| [`ports/shell`](ports/shell) | POSIX sh + awk | `./aisgapwatch.sh FILE` | `bash test.sh` |
+
+CI (`.github/workflows/ports.yml`) builds and tests every port on each push.
+
+## Edge / air-gap
+
+`aisgapwatch` is built for the disconnected case. There are **no runtime
+dependencies and no network calls** in any implementation, so the whole tool
+runs from a thumb drive on an air-gapped analysis box. The
+[`ports/shell`](ports/shell) port is a single `sh` + `awk` script — on a
+busybox-class machine with no Python, Node, or Go, it still triages a track
+export end-to-end. Copy the repo (or just one port) across and run; nothing
+phones home.
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest -q                 # 24 tests, no network
+pytest -q                 # 135 tests, no network
 python examples/quickstart.py
 ```
 
-CI runs the suite on Python 3.9 / 3.11 / 3.13 (see `.github/workflows/ci.yml`).
+CI runs the Python suite on 3.9 / 3.11 / 3.13 (`.github/workflows/ci.yml`) and
+the ports on every push (`.github/workflows/ports.yml`).
+
+## Scope, authorization & safety
+
+- **Defensive / authorized-use only.** `aisgapwatch` analyzes AIS
+  position-report data you already have a lawful basis to process. It is for
+  situational awareness, force protection, sanctions/safety analysis, and
+  research — not for targeting, interdiction, or any offensive use.
+- **Passive and offline.** It performs *no* active scanning, transmission, or
+  network access. It reads a file (or stdin) and writes a report. There is no
+  flag that turns on any network behaviour, because there is none.
+- **No fabricated intelligence.** Every score, reason, coordinate, and exported
+  identifier is computed from your input. The tool never invents vessels, CVEs,
+  fingerprints, or attribution.
+- A high score means *"a human should look at this,"* not *"this vessel did
+  something wrong."* Benign explanations (receiver coverage, equipment faults)
+  are common; treat the output as triage, not adjudication.
 
 ## License
 

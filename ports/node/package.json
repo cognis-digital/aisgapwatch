@@ -1,0 +1,13 @@
+{
+  "name": "aisgapwatch-node",
+  "version": "0.2.0",
+  "description": "Node.js port of aisgapwatch — detect & score AIS transponder-gap anomalies (defensive OSINT).",
+  "license": "MIT",
+  "author": "Cognis Digital",
+  "bin": { "aisgapwatch": "./aisgapwatch.js" },
+  "main": "aisgapwatch.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": { "node": ">=18" }
+}
