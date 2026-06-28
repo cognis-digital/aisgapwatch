@@ -19,6 +19,84 @@ straight to a map (GeoJSON), a CTI platform (STIX 2.1), or a log pipeline
 
 ---
 
+
+<!-- cognis:example:start -->
+## 🔎 Example output
+
+Real, reproducible output from the tool — runs offline:
+
+```console
+$ aisgapwatch --version
+aisgapwatch 0.2.0
+```
+
+```console
+$ aisgapwatch --help
+usage: aisgapwatch [-h] [--min-gap MIN_GAP] [--min-score MIN_SCORE]
+                   [--top TOP] [--format {json,ndjson,csv,geojson,stix}]
+                   [--json] [--stats] [--context] [--lenient] [--version]
+                   file
+
+Detect & score AIS transponder-gap anomalies (defensive OSINT).
+
+positional arguments:
+  file                  AIS file: timestamp,mmsi,lat,lon per line (- for
+                        stdin)
+
+options:
+  -h, --help            show this help message and exit
+  --min-gap MIN_GAP     minimum gap length in seconds to report (default 1800)
+  --min-score MIN_SCORE
+                        only report gaps scoring >= this in [0,1] (default 0)
+  --top TOP             show only the top N gaps (0 = all)
+  --format {json,ndjson,csv,geojson,stix}
+                        machine output format: json, ndjson, csv, geojson,
+                        stix
+  --json                shorthand for --format json (kept for compatibility)
+  --stats               also report per-vessel feed-quality stats (table mode)
+  --context             annotate table rows with reappearance bearing +
+                        plausibility
+  --lenient             skip malformed rows instead of failing
+  --version             show program's version number and exit
+```
+
+> Blocks above are real `aisgapwatch` output — reproduce them from a clone.
+
+**Sample result format** _(illustrative values — run on your own data for real findings):_
+
+```
+{
+"results": [
+{
+"gaps": [
+{
+"start_time": "2023-02-15T14:30:00Z",
+"end_time": "2023-02-15T14:35:00Z",
+"mmsi": 123456,
+"lat": 45.1234,
+"lon": -122.3456,
+"score": 0.8
+},
+{
+"start_time": "2023-02-16T10:20:00Z",
+"end_time": "2023-02-16T10:25:00Z",
+"mmsi": 789012,
+"lat": 37.6543,
+"lon": -87.9012,
+"score": 0.9
+}
+],
+"stats": {
+"total_gaps": 5,
+"top_score": 0.9,
+"avg_gap_len": 300
+}
+}
+]
+```
+
+<!-- cognis:example:end -->
+
 ## Why this exists
 
 A "dark" period in an AIS feed is one of the strongest open signals of sanctions

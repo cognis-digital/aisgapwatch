@@ -1,0 +1,28 @@
+$ aisgapwatch --help
+
+usage: aisgapwatch [-h] [--min-gap MIN_GAP] [--min-score MIN_SCORE]
+                   [--top TOP] [--format {json,ndjson,csv,geojson,stix}]
+                   [--json] [--stats] [--context] [--lenient] [--version]
+                   file
+
+Detect & score AIS transponder-gap anomalies (defensive OSINT).
+
+positional arguments:
+  file                  AIS file: timestamp,mmsi,lat,lon per line (- for
+                        stdin)
+
+options:
+  -h, --help            show this help message and exit
+  --min-gap MIN_GAP     minimum gap length in seconds to report (default 1800)
+  --min-score MIN_SCORE
+                        only report gaps scoring >= this in [0,1] (default 0)
+  --top TOP             show only the top N gaps (0 = all)
+  --format {json,ndjson,csv,geojson,stix}
+                        machine output format: json, ndjson, csv, geojson,
+                        stix
+  --json                shorthand for --format json (kept for compatibility)
+  --stats               also report per-vessel feed-quality stats (table mode)
+  --context             annotate table rows with reappearance bearing +
+                        plausibility
+  --lenient             skip malformed rows instead of failing
+  --version             show program's version number and exit
